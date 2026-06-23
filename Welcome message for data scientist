@@ -1,0 +1,10 @@
+object Welcome {
+
+  def welcomemsg(): Unit ={
+    println("Welcome to the world data science!")
+    println("Scala is a powerful language for big data and analytics.")
+  }
+  def main(args: Array[String]): Unit = {
+    welcomemsg()
+  }
+}
