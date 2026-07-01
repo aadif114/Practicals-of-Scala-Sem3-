@@ -1,0 +1,22 @@
+import breeze.linalg._
+import breeze.stats.distributions.Rand
+
+object RanMatrixEg {
+  def main(args: Array[String]): Unit = {
+
+    val matrix = DenseMatrix.rand[Double](3, 3, Rand.uniform)
+
+    val transpose = matrix.t
+
+    val determinant = det(matrix)
+
+    println("Random Matrix:")
+    println(matrix)
+
+    println("\nTranspose:")
+    println(transpose)
+
+    println("\nDeterminant:")
+    println(determinant)
+  }
+}
