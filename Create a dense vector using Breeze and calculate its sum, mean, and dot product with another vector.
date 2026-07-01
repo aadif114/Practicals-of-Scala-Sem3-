@@ -1,0 +1,31 @@
+import breeze.linalg._
+
+
+object pr4 {
+ def main(args: Array[String]): Unit = {
+
+
+   // Create two dense vectors
+   val v1 = DenseVector(2.0, 3.0, 4.0, 5.0, 6.0)
+   val v2 = DenseVector(6.0, 5.0, 4.0, 3.0, 2.0)
+
+
+   // Sum
+   val sum = breeze.linalg.sum(v1)
+
+
+   // Mean
+   val mean = sum / v1.length
+
+
+   // Dot Product
+   val dotPro = v1 dot v2
+
+
+   println("Vector 1: " + v1)
+   println("Vector 2: " + v2)
+   println("Sum = " + sum)
+   println("Mean = " + mean)
+   println("Dot Product = " + dotPro)
+ }
+}
