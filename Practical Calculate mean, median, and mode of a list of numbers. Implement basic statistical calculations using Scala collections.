@@ -1,0 +1,27 @@
+object Stats {
+  def main(args: Array[String]): Unit = {
+
+    val num = List(10, 20, 40, 10, 60, 20, 40, 70, 10, 0)
+
+    // Mean
+    val mean = num.sum.toDouble / num.length
+
+    // Median
+    val sorted = num.sorted
+    val n = sorted.length
+
+    val median =
+      if (n % 2 == 0)
+        (sorted(n / 2 - 1) + sorted(n / 2)) / 2.0
+      else
+        sorted(n / 2)
+
+    // Mode
+    val mode = num.groupBy(identity).maxBy(_._2.size)._1
+
+    println("Numbers: " + num)
+    println("Mean = " + mean)
+    println("Median = " + median)
+    println("Mode = " + mode)
+  }
+}
