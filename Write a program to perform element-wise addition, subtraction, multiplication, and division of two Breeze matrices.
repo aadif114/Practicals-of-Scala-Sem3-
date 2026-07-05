@@ -1,0 +1,58 @@
+import breeze.linalg._
+
+object MatrixOp {
+  def main(args: Array[String]): Unit = {
+
+    // Create Matrix 1
+    val matrix1 = DenseMatrix(
+      (10.0, 20.0, 30.0),
+      (40.0, 50.0, 60.0),
+      (70.0, 80.0, 90.0)
+    )
+
+    // Create Matrix 2
+    val matrix2 = DenseMatrix(
+      (2.0, 4.0, 5.0),
+      (8.0, 10.0, 12.0),
+      (14.0, 16.0, 18.0)
+    )
+
+    println("Matrix 1:")
+    println(matrix1)
+
+    println("\nMatrix 2:")
+    println(matrix2)
+
+    // Addition
+    val addition = matrix1 + matrix2
+
+    // Subtraction
+    val subtraction = matrix1 - matrix2
+
+    // Element-wise Multiplication
+    val multiplication = DenseMatrix.zeros[Double](matrix1.rows, matrix1.cols)
+
+    for (i <- 0 until matrix1.rows; j <- 0 until matrix1.cols) {
+      multiplication(i, j) = matrix1(i, j) * matrix2(i, j)
+    }
+
+    // Element-wise Division
+    val division = DenseMatrix.zeros[Double](matrix1.rows, matrix1.cols)
+
+    for (i <- 0 until matrix1.rows; j <- 0 until matrix1.cols) {
+      division(i, j) = matrix1(i, j) / matrix2(i, j)
+    }
+
+    println("\nElement-wise Addition:")
+    println(addition)
+
+    println("\nElement-wise Subtraction:")
+    println(subtraction)
+
+    println("\nElement-wise Multiplication:")
+    println(multiplication)
+
+    println("\nElement-wise Division:")
+    println(division)
+  }
+}
