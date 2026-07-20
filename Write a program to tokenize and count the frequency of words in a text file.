@@ -1,0 +1,30 @@
+import scala.io.Source
+
+object BreastCancerCounter {
+
+  def main(args: Array[String]): Unit = {
+
+    // CSV file name
+    val filename = "Breast_Cancer.csv"
+
+    // Read all lines
+    val lines = Source.fromFile(filename).getLines().toList
+
+    // Remove the header
+    val data = lines.tail
+
+    // Change the column index according to your dataset
+    // Example: Diagnosis column (M/B) is usually at index 1
+    val diagnosis = data.map(_.split(",")(1).trim)
+
+    // Count frequency
+    val diagnosisCount = diagnosis.groupBy(identity).view.mapValues(_.size).toMap
+
+    // Display result
+    println("Diagnosis Frequency:")
+    diagnosisCount.foreach {
+      case (value, count) =>
+        println(f"$value%-10s -> $count")
+    }
+  }
+}
