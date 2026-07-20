@@ -1,0 +1,52 @@
+import breeze.linalg._
+import breeze.plot._
+import com.github.tototoshi.csv._
+import java.io.File
+
+object BreastCancerScatterPlot {
+
+  def main(args: Array[String]): Unit = {
+
+    val reader = CSVReader.open(new File("Breast_Cancer.csv"))
+    val data = reader.allWithHeaders()
+    reader.close()
+
+    // Separate data by Status
+    val alive = data.filter(_("Status") == "Alive")
+    val dead = data.filter(_("Status") == "Dead")
+
+    // Extract Tumor Size (X-axis) and Survival Months (Y-axis)
+    def extractXY(rows: List[Map[String, String]]) = {
+
+      val x = DenseVector(rows.map(_("Tumor Size").toDouble).toArray)
+      val y = DenseVector(rows.map(_("Survival Months").toDouble).toArray)
+
+      (x, y)
+    }
+
+    val (xAlive, yAlive) = extractXY(alive)
+    val (xDead, yDead) = extractXY(dead)
+
+    // Create Scatter Plot
+    val fig = Figure()
+    val plt = fig.subplot(0)
+
+    plt.title = "Tumor Size vs Survival Months"
+    plt.xlabel = "Tumor Size"
+    plt.ylabel = "Survival Months"
+
+    plt += plot(xAlive, yAlive,
+      '.',
+      name = "Alive",
+      colorcode = "blue"
+    )
+
+    plt += plot(xDead, yDead,
+      '.',
+      name = "Dead",
+      colorcode = "red"
+    )
+
+    fig.refresh()
+  }
+}
