@@ -1,0 +1,36 @@
+import breeze.linalg._
+import breeze.plot._
+import com.github.tototoshi.csv._
+import java.io.File
+
+object BreastCancerHistogram {
+
+  def main(args: Array[String]): Unit = {
+
+    val reader = CSVReader.open(new File("Breast_Cancer.csv"))
+    val data = reader.allWithHeaders()
+    reader.close()
+
+    // Extract Tumor Size as a vector of doubles
+    val tumorSizes =
+      DenseVector(data.map(_("Tumor Size").toDouble).toArray)
+
+    // Create figure and subplots with different bin sizes
+    val fig = Figure("Histogram of Tumor Size")
+
+    val binSizes = List(5, 10, 20)
+
+    for ((bins, idx) <- binSizes.zipWithIndex) {
+
+      val plt = fig.subplot(1, binSizes.length, idx)
+
+      plt += hist(tumorSizes, bins)
+
+      plt.title = s"Histogram with $bins bins"
+      plt.xlabel = "Tumor Size"
+      plt.ylabel = "Frequency"
+    }
+
+    fig.refresh()
+  }
+}
