@@ -1,0 +1,48 @@
+import com.github.tototoshi.csv._
+import java.io.File
+
+object OneHotEncoding {
+
+  def main(args: Array[String]): Unit = {
+
+    val reader = CSVReader.open(new File("Breast_Cancer.csv"))
+    val data = reader.allWithHeaders()
+    reader.close()
+
+    // Get unique Status values
+    val categories = data.map(_("Status")).distinct.sorted
+
+    val newData = data.map { row =>
+
+      val status = row("Status")
+
+      val oneHot = categories.map(cat =>
+        cat -> (if (cat == status) "1" else "0")
+      ).toMap
+
+      (row - "Status") ++ oneHot
+    }
+
+    // Print the header
+    val headers = newData.head.keys.toList
+    println(headers.mkString(", "))
+
+    // Print each one-hot encoded row
+    newData.foreach { row =>
+      println(headers.map(row).mkString(", "))
+    }
+
+    // Write output to new CSV file
+    val writer = CSVWriter.open(new File("Breast_Cancer_Encoded.csv"))
+
+    writer.writeRow(headers)
+
+    newData.foreach { row =>
+      writer.writeRow(headers.map(row))
+    }
+
+    writer.close()
+
+    println("One-hot encoded file written to Breast_Cancer_Encoded.csv")
+  }
+}
