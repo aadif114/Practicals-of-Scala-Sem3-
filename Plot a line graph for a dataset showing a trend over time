@@ -1,0 +1,39 @@
+import breeze.linalg._
+import breeze.plot._
+import com.github.tototoshi.csv._
+import java.io.File
+
+object NSELinePlot {
+
+  def main(args: Array[String]): Unit = {
+
+    val reader = CSVReader.open(new File("National_Stock_Exchange_of_India_Ltd.csv"))
+    val data = reader.allWithHeaders()
+    reader.close()
+
+    // Read Symbol and LTP
+    val parsedData = data.flatMap { row =>
+      try {
+        val symbol = row("Symbol")
+        val ltp = row("LTP").replace(",", "").toDouble
+        Some((symbol, ltp))
+      } catch {
+        case _: Throwable => None
+      }
+    }
+
+    val x = DenseVector((0 until parsedData.length).map(_.toDouble).toArray)
+    val y = DenseVector(parsedData.map(_._2).toArray)
+
+    val fig = Figure("NSE Stock LTP")
+    val plt = fig.subplot(0)
+
+    plt += plot(x, y, name = "LTP", colorcode = "blue")
+
+    plt.xlabel = "Companies"
+    plt.ylabel = "Last Traded Price (LTP)"
+    plt.title = "NSE Companies - Last Traded Price"
+
+    fig.refresh()
+  }
+}
