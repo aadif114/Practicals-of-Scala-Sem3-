@@ -1,0 +1,136 @@
+import scala.io.Source
+import breeze.linalg._
+import breeze.plot._
+
+object MovingAverage {
+
+  def main(args: Array[String]): Unit = {
+
+    // Import Dataset
+    val file = Source.fromFile("C:/Users/abhis/Downloads/AirPassengers.csv")
+
+    // Read Passenger column
+    val data = file.getLines().drop(1).flatMap { line =>
+      val cols = line.split(",")
+
+      if (cols.length >= 2)
+        cols(1).trim.toDoubleOption
+      else
+        None
+
+    }.toList
+
+    file.close()
+
+    // Feature Engineering
+    val passengers = data.filter(_ >= 0)
+
+    println("Total Records : " + passengers.length)
+
+    val window = 3
+
+    // ============================
+    // Simple Moving Average (SMA)
+    // ============================
+
+    val sma = passengers.sliding(window)
+      .map(windowData => windowData.sum / window)
+      .toList
+
+    // ============================
+    // Weighted Moving Average (WMA)
+    // ============================
+
+    val weights = List(1.0, 2.0, 3.0)
+    val totalWeight = weights.sum
+
+    val wma = passengers.sliding(window)
+      .map { windowData =>
+        windowData.zip(weights)
+          .map { case (value, weight) =>
+            value * weight
+          }
+          .sum / totalWeight
+      }
+      .toList
+
+    // ============================
+    // Exponential Moving Average (EMA)
+    // ============================
+
+    val alpha = 0.3
+
+    var ema = List(passengers.head)
+
+    for (i <- 1 until passengers.length) {
+
+      val nextEMA =
+        alpha * passengers(i) +
+          (1 - alpha) * ema.last
+
+      ema = ema :+ nextEMA
+    }
+
+    // ============================
+    // Output
+    // ============================
+
+    println("\nFirst 10 Original Values")
+    println(passengers.take(10))
+
+    println("\nFirst 10 SMA")
+    println(sma.take(10))
+
+    println("\nFirst 10 WMA")
+    println(wma.take(10))
+
+    println("\nFirst 10 EMA")
+    println(ema.take(10))
+
+    // ============================
+    // Visualization
+    // ============================
+
+    val fig = Figure("Moving Average Analysis")
+
+    val p = fig.subplot(0)
+
+    val xOriginal =
+      DenseVector((0 until passengers.length).map(_.toDouble).toArray)
+
+    p += plot(
+      xOriginal,
+      DenseVector(passengers.toArray),
+      name = "Original"
+    )
+
+    val xAverage =
+      DenseVector((window - 1 until passengers.length).map(_.toDouble).toArray)
+
+    p += plot(
+      xAverage,
+      DenseVector(sma.toArray),
+      name = "SMA"
+    )
+
+    p += plot(
+      xAverage,
+      DenseVector(wma.toArray),
+      name = "WMA"
+    )
+
+    p += plot(
+      xOriginal,
+      DenseVector(ema.toArray),
+      name = "EMA"
+    )
+
+    p.xlabel = "Month"
+
+    p.ylabel = "Passengers"
+
+    p.legend = true
+
+    fig.refresh()
+  }
+}
