@@ -1,0 +1,87 @@
+import scala.io.Source
+
+object s112m2pra1 {
+
+  def main(args: Array[String]): Unit = {
+
+    val stream = getClass.getResourceAsStream("/Iris.csv")
+
+    if (stream == null) {
+      println("Error: iris.csv not found in resources folder!")
+      return
+    }
+
+    val file = Source.fromInputStream(stream)
+
+    // Read CSV and skip header
+    val data = file.getLines().drop(1).flatMap { line =>
+      val cols = line.split(",")
+
+      for {
+        x <- cols(0).trim.toDoubleOption // Sepal Length
+        y <- cols(2).trim.toDoubleOption // Petal Length
+      } yield (x, y)
+    }.toList
+
+    file.close()
+
+    val (x, y) = data.unzip
+
+    val n = x.length.toDouble
+
+    val meanX = x.sum / n
+    val meanY = y.sum / n
+
+    val numerator =
+      x.zip(y).map {
+        case (xi, yi) =>
+          (xi - meanX) * (yi - meanY)
+      }.sum
+
+    val denominator = math.sqrt(
+      x.map(v => math.pow(v - meanX, 2)).sum *
+        y.map(v => math.pow(v - meanY, 2)).sum
+    )
+
+    val r =
+      if (denominator == 0) 0.0
+      else numerator / denominator
+
+    val relationship =
+      if (r >= 0.7)
+        "Strong Positive"
+      else if (r >= 0.3)
+        "Moderate Positive"
+      else if (r > 0)
+        "Weak Positive"
+      else if (r <= -0.7)
+        "Strong Negative"
+      else if (r <= -0.3)
+        "Moderate Negative"
+      else
+        "Weak Negative"
+
+    val df = n - 2
+
+    val tStatistic =
+      r * math.sqrt(df / (1 - r * r))
+
+    val significant =
+      math.abs(tStatistic) > 1.96
+
+    println("------------------------------------")
+    println("Pearson Correlation Analysis")
+    println("------------------------------------")
+    println(s"Dataset Size : ${n.toInt}")
+    println(f"Pearson Correlation (r): $r%.4f")
+    println(s"Relationship : $relationship")
+    println(f"t-Statistic : $tStatistic%.4f")
+    println(s"Degrees of Freedom : ${df.toInt}")
+    println(s"Significant at 5% : $significant")
+
+    if (significant)
+      println("Inference: Reject H0. There is a statistically significant correlation.")
+    else
+      println("Inference: Fail to Reject H0. There is no statistically significant correlation.")
+  }
+}
