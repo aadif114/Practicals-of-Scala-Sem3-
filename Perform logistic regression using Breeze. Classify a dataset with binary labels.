@@ -1,0 +1,187 @@
+import breeze.linalg._
+
+import scala.io.Source
+
+object s112m2pra6 {
+
+  // Sigmoid function
+  def sigmoid(z: Double): Double = {
+    1.0 / (1.0 + math.exp(-z))
+  }
+
+  def main(args: Array[String]): Unit = {
+
+    // ------------------------------------------------
+    // 1. Read Heart Failure Prediction Dataset
+    // ------------------------------------------------
+
+    val filePath = "heart.csv"
+
+    val source = Source.fromFile(filePath)
+
+    val lines = source.getLines().toList
+
+    source.close()
+
+    // Get header
+    val header = lines.head.split(",")
+
+    // Find required columns
+    val ageIndex = header.indexOf("Age")
+    val heartDiseaseIndex = header.indexOf("HeartDisease")
+
+    // Read Age and HeartDisease
+    val data = lines.tail.flatMap { line =>
+
+      val columns = line.split(",", -1)
+
+      try {
+
+        val age = columns(ageIndex).toDouble
+        val heartDisease = columns(heartDiseaseIndex).toDouble
+
+        Some((age, heartDisease))
+
+      } catch {
+        case _: Exception => None
+      }
+    }
+
+    // ------------------------------------------------
+    // 2. Create Breeze vectors
+    // ------------------------------------------------
+
+    val x = DenseVector(data.map(_._1).toArray)
+
+    val y = DenseVector(data.map(_._2).toArray)
+
+    println("Heart Failure Dataset")
+    println("---------------------")
+
+    println("Number of records: " + x.length)
+
+    println()
+
+    // ------------------------------------------------
+    // 3. Create Design Matrix
+    // ------------------------------------------------
+
+    val ones = DenseVector.ones[Double](x.length)
+
+    val X = DenseMatrix.horzcat(
+      ones.asDenseMatrix.t,
+      x.asDenseMatrix.t
+    )
+
+    // ------------------------------------------------
+    // 4. Initialize weights
+    // ------------------------------------------------
+
+    var weights = DenseVector(0.0, 0.0)
+
+    // Learning rate
+    val learningRate = 0.0001
+
+    // Number of iterations
+    val iterations = 10000
+
+    // ------------------------------------------------
+    // 5. Logistic Regression using Gradient Descent
+    // ------------------------------------------------
+
+    for (_ <- 0 until iterations) {
+
+      // Calculate predictions
+      val predictions = DenseVector(
+        (0 until X.rows).map { i =>
+
+          val z = X(i, ::).t dot weights
+
+          sigmoid(z)
+
+        }.toArray
+      )
+
+      // Calculate error
+      val error = predictions - y
+
+      // Calculate gradient
+      val gradient =
+        (X.t * error) / X.rows.toDouble
+
+      // Update weights
+      weights =
+        weights - learningRate * gradient
+    }
+
+    // ------------------------------------------------
+    // 6. Display trained model
+    // ------------------------------------------------
+
+    println("Logistic Regression Model")
+    println("-------------------------")
+
+    println(f"Intercept = ${weights(0)}%.4f")
+
+    println(f"Coefficient = ${weights(1)}%.4f")
+
+    println()
+
+    // ------------------------------------------------
+    // 7. Prediction function
+    // ------------------------------------------------
+
+    def predict(age: Double): Unit = {
+
+      val probability =
+        sigmoid(
+          weights(0) +
+            weights(1) * age
+        )
+
+      val prediction =
+        if (probability >= 0.5)
+          1
+        else
+          0
+
+      println(f"Age = $age%.1f")
+
+      println(
+        f"Probability = $probability%.4f"
+      )
+
+      println(
+        "Prediction = " + prediction
+      )
+
+      if (prediction == 1) {
+
+        println(
+          "Result: Heart Disease"
+        )
+
+      } else {
+
+        println(
+          "Result: No Heart Disease"
+        )
+      }
+
+      println()
+    }
+
+    // ------------------------------------------------
+    // 8. Test predictions
+    // ------------------------------------------------
+
+    println("Predictions")
+    println("-----------")
+
+    predict(30.0)
+
+    predict(50.0)
+
+    predict(70.0)
+  }
+}
