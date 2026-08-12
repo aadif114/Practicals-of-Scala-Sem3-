@@ -1,0 +1,35 @@
+import scala.io.Source
+
+object s112m2pra3 {
+
+  def main(args: Array[String]): Unit = {
+
+    // Change the path according to your system
+    val file = Source.fromFile("Iris.csv")
+
+    // Read species column (last column)
+    val species = file.getLines()
+      .drop(1) // Skip header
+      .map(_.split(",").last.trim)
+      .toList
+
+    file.close()
+
+    // Calculate frequency
+    val frequency = species.groupBy(identity)
+      .map { case (k, v) => (k, v.size) }
+      .toSeq
+      .sortBy(_._1)
+
+    println("-----------------------------------------------")
+    println("Species\t\tFrequency\tCumulative Frequency")
+    println("-----------------------------------------------")
+
+    var cumulative = 0
+
+    for ((name, freq) <- frequency) {
+      cumulative += freq
+      println(f"$name%-18s $freq%-10d $cumulative")
+    }
+  }
+}
