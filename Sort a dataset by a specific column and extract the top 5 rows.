@@ -1,0 +1,66 @@
+import scala.io.Source
+
+object s112m2pra4 {
+
+  def main(args: Array[String]): Unit = {
+
+    // Read CSV file
+    val file = Source.fromFile("video_games_sales.csv")
+
+    val lines = file.getLines().toList
+    file.close()
+
+    // Header
+    val header = lines.head.split(",").map(_.trim)
+
+    println("Columns:")
+    println(header.mkString(" | "))
+    println()
+
+    // Find column positions
+    val nameIndex = header.indexOf("Name")
+    val platformIndex = header.indexOf("Platform")
+    val genreIndex = header.indexOf("Genre")
+    val globalSalesIndex = header.indexOf("Global_Sales")
+
+    // Read and process data
+    val games = lines.tail.flatMap { line =>
+
+      val columns = line.split(",", -1).map(_.trim)
+
+      if (columns.length > globalSalesIndex) {
+        try {
+          val name = columns(nameIndex)
+          val platform = columns(platformIndex)
+          val genre = columns(genreIndex)
+          val globalSales = columns(globalSalesIndex).toDouble
+
+          Some((name, platform, genre, globalSales))
+        } catch {
+          case _: Exception => None
+        }
+      } else {
+        None
+      }
+    }
+
+    // Sort by Global Sales in descending order
+    val sortedGames = games.sortBy(-_._4)
+
+    // Extract top 5 rows
+    val top5 = sortedGames.take(5)
+
+    // Display result
+    println("Top 5 Video Games by Global Sales")
+    println("----------------------------------")
+
+    top5.foreach { game =>
+      println(
+        "Game: " + game._1 +
+          " | Platform: " + game._2 +
+          " | Genre: " + game._3 +
+          " | Global Sales: " + game._4 + " million"
+      )
+    }
+  }
+}
