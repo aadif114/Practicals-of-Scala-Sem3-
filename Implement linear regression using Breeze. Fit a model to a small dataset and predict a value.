@@ -1,0 +1,52 @@
+import breeze.linalg._
+
+object s112pra5 {
+
+  def main(args: Array[String]): Unit = {
+
+    // Small dataset
+    // X = Hours Studied
+    // Y = Exam Score
+
+    val x = DenseVector(2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
+    val y = DenseVector(50.0, 55.0, 60.0, 65.0, 70.0, 75.0)
+
+    // Create design matrix
+    val X = DenseMatrix(
+      (1.0, 2.0),
+      (1.0, 3.0),
+      (1.0, 4.0),
+      (1.0, 5.0),
+      (1.0, 6.0),
+      (1.0, 7.0)
+    )
+
+    // Calculate regression coefficients
+    // beta = (X'X)^-1 X'y
+    val beta = inv(X.t * X) * X.t * y
+
+    val intercept = beta(0)
+    val slope = beta(1)
+
+    // Display model
+    println("Linear Regression Model")
+    println("-----------------------")
+
+    println(f"Intercept = $intercept%.2f")
+    println(f"Slope = $slope%.2f")
+
+    println()
+    println(f"Equation: y = $intercept%.2f + $slope%.2f * x")
+
+    // Predict exam score for 8 hours of study
+    val hours = 8.0
+
+    val prediction = intercept + slope * hours
+
+    println()
+    println("Prediction")
+    println("----------")
+    println(f"Hours Studied = $hours%.1f")
+    println(f"Predicted Exam Score = $prediction%.2f")
+  }
+}
