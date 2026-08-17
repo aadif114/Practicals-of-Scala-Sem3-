@@ -1,0 +1,427 @@
+import breeze.linalg._
+import scala.io.Source
+import scala.collection.mutable.ArrayBuffer
+
+object Practical7 {
+
+  // -----------------------------------------
+  // Euclidean Distance
+  // -----------------------------------------
+  def euclideanDistance(
+                         v1: DenseVector[Double],
+                         v2: DenseVector[Double]
+                       ): Double = {
+
+    var sumSquares = 0.0
+
+    for (i <- 0 until v1.length) {
+
+      val difference =
+        v1(i) - v2(i)
+
+      sumSquares +=
+        difference * difference
+    }
+
+    math.sqrt(sumSquares)
+  }
+
+  // -----------------------------------------
+  // Normalize Features
+  // -----------------------------------------
+  def normalize(
+                 data: Array[DenseVector[Double]]
+               ): Array[DenseVector[Double]] = {
+
+    val numberOfRows =
+      data.length
+
+    val numberOfColumns =
+      data(0).length
+
+    val means =
+      Array.fill(numberOfColumns)(0.0)
+
+    val stds =
+      Array.fill(numberOfColumns)(0.0)
+
+    // -----------------------------------------
+    // Calculate Mean
+    // -----------------------------------------
+    for (j <- 0 until numberOfColumns) {
+
+      var total = 0.0
+
+      for (i <- 0 until numberOfRows) {
+        total += data(i)(j)
+      }
+
+      means(j) =
+        total / numberOfRows
+    }
+
+    // -----------------------------------------
+    // Calculate Standard Deviation
+    // -----------------------------------------
+    for (j <- 0 until numberOfColumns) {
+
+      var total = 0.0
+
+      for (i <- 0 until numberOfRows) {
+
+        val difference =
+          data(i)(j) - means(j)
+
+        total +=
+          difference * difference
+      }
+
+      stds(j) =
+        math.sqrt(
+          total / numberOfRows
+        )
+    }
+
+    // -----------------------------------------
+    // Normalize Data
+    // -----------------------------------------
+    data.map { vector =>
+
+      val normalized =
+        DenseVector.zeros[Double](
+          numberOfColumns
+        )
+
+      for (j <- 0 until numberOfColumns) {
+
+        if (stds(j) == 0.0) {
+
+          normalized(j) = 0.0
+
+        } else {
+
+          normalized(j) =
+            (vector(j) - means(j)) /
+              stds(j)
+        }
+      }
+
+      normalized
+    }
+  }
+
+  // -----------------------------------------
+  // KNN Prediction
+  // -----------------------------------------
+  def predict(
+               trainData: Array[
+                 (DenseVector[Double], String)
+               ],
+               testVector: DenseVector[Double],
+               k: Int
+             ): String = {
+
+    // Calculate distance from test vector
+    // to every training vector
+
+    val distances =
+      trainData.map {
+        case (vector, label) =>
+
+          val distance =
+            euclideanDistance(
+              vector,
+              testVector
+            )
+
+          (distance, label)
+      }
+
+    // -----------------------------------------
+    // Sort by Distance
+    // -----------------------------------------
+    val nearestNeighbors =
+      distances
+        .sortBy(_._1)
+        .take(k)
+
+    // -----------------------------------------
+    // Count Classes
+    // -----------------------------------------
+    val benignCount =
+      nearestNeighbors.count(
+        _._2 == "B"
+      )
+
+    val malignantCount =
+      nearestNeighbors.count(
+        _._2 == "M"
+      )
+
+    // -----------------------------------------
+    // Return Majority Class
+    // -----------------------------------------
+    if (benignCount > malignantCount) {
+
+      "B"
+
+    } else {
+
+      "M"
+    }
+  }
+
+  // -----------------------------------------
+  // Main Program
+  // -----------------------------------------
+  def main(args: Array[String]): Unit = {
+
+    println("S112 Aditya Singh")
+    println("------------------------------------------")
+    println("Euclidean Distance using Breeze")
+    println("K-Nearest Neighbor Classification")
+    println("------------------------------------------")
+
+    // -----------------------------------------
+    // CSV File
+    // -----------------------------------------
+    val fileName =
+      "data.csv"
+
+    // -----------------------------------------
+    // Read CSV
+    // -----------------------------------------
+    val lines =
+      Source
+        .fromFile(fileName)
+        .getLines()
+        .drop(1)
+        .toArray
+
+    val features =
+      ArrayBuffer[
+        DenseVector[Double]
+      ]()
+
+    val labels =
+      ArrayBuffer[String]()
+
+    // -----------------------------------------
+    // Extract Data
+    // -----------------------------------------
+    for (line <- lines) {
+
+      val row =
+        line.split(",")
+
+      try {
+
+        // Dataset:
+        // Column 0 = ID
+        // Column 1 = Diagnosis
+        // Column 2-31 = Features
+
+        val label =
+          row(1).trim
+
+        val values =
+          row
+            .slice(2, 32)
+            .map(_.trim.toDouble)
+
+        features +=
+          DenseVector(values)
+
+        labels +=
+          label
+
+      } catch {
+
+        case _: Exception =>
+        // Skip invalid rows
+      }
+    }
+
+    // -----------------------------------------
+    // Display Dataset Information
+    // -----------------------------------------
+    println(
+      "\nTotal records loaded: " +
+        features.length
+    )
+
+    if (features.isEmpty) {
+
+      println(
+        "No data found. Check your CSV file."
+      )
+
+      return
+    }
+
+    println(
+      "Number of features: " +
+        features.head.length
+    )
+
+    // -----------------------------------------
+    // Normalize Features
+    // -----------------------------------------
+    val normalizedFeatures =
+      normalize(
+        features.toArray
+      )
+
+    // -----------------------------------------
+    // Train/Test Split
+    // -----------------------------------------
+    val splitIndex =
+      (normalizedFeatures.length * 0.8)
+        .toInt
+
+    val trainFeatures =
+      normalizedFeatures
+        .take(splitIndex)
+
+    val testFeatures =
+      normalizedFeatures
+        .drop(splitIndex)
+
+    val trainLabels =
+      labels
+        .take(splitIndex)
+        .toArray
+
+    val testLabels =
+      labels
+        .drop(splitIndex)
+        .toArray
+
+    // -----------------------------------------
+    // Create Training Dataset
+    // -----------------------------------------
+    val trainData =
+      trainFeatures.zip(
+        trainLabels
+      )
+
+    // -----------------------------------------
+    // K Value
+    // -----------------------------------------
+    val k = 5
+
+    println(
+      "\nK value: " + k
+    )
+
+    println(
+      "------------------------------------------"
+    )
+
+    // -----------------------------------------
+    // Classification
+    // -----------------------------------------
+    var correct = 0
+
+    for (i <- 0 until testFeatures.length) {
+
+      val predicted =
+        predict(
+          trainData,
+          testFeatures(i),
+          k
+        )
+
+      val actual =
+        testLabels(i)
+
+      if (predicted == actual) {
+
+        correct += 1
+      }
+
+      // Display first 10 results
+      if (i < 10) {
+
+        println(
+          "Test " +
+            (i + 1) +
+            " | Actual: " +
+            actual +
+            " | Predicted: " +
+            predicted
+        )
+      }
+    }
+
+    // -----------------------------------------
+    // Calculate Accuracy
+    // -----------------------------------------
+    val accuracy =
+      correct.toDouble /
+        testFeatures.length *
+        100
+
+    println(
+      "------------------------------------------"
+    )
+
+    println(
+      "Correct Predictions : " +
+        correct
+    )
+
+    println(
+      "Total Test Records  : " +
+        testFeatures.length
+    )
+
+    println(
+      f"Accuracy            : $accuracy%.2f%%"
+    )
+
+    // -----------------------------------------
+    // Euclidean Distance Example
+    // -----------------------------------------
+    println(
+      "\nEuclidean Distance Example"
+    )
+
+    println(
+      "------------------------------------------"
+    )
+
+    val v1 =
+      DenseVector(
+        1.0,
+        2.0,
+        3.0
+      )
+
+    val v2 =
+      DenseVector(
+        4.0,
+        6.0,
+        8.0
+      )
+
+    val distance =
+      euclideanDistance(
+        v1,
+        v2
+      )
+
+    println(
+      "Vector 1: " + v1
+    )
+
+    println(
+      "Vector 2: " + v2
+    )
+
+    println(
+      "Euclidean Distance: " +
+        distance
+    )
+  }
+}
