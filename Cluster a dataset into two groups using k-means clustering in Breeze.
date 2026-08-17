@@ -1,0 +1,366 @@
+import breeze.linalg._
+import scala.io.Source
+import scala.collection.mutable.ArrayBuffer
+
+object Practical8 {
+
+  // -----------------------------------------
+  // Euclidean Distance
+  // -----------------------------------------
+  def euclideanDistance(
+                         v1: DenseVector[Double],
+                         v2: DenseVector[Double]
+                       ): Double = {
+
+    var sumSquares = 0.0
+
+    for (i <- 0 until v1.length) {
+
+      val difference =
+        v1(i) - v2(i)
+
+      sumSquares +=
+        difference * difference
+    }
+
+    math.sqrt(sumSquares)
+  }
+
+  // -----------------------------------------
+  // Calculate Centroid
+  // -----------------------------------------
+  def calculateCentroid(
+                         points: Array[DenseVector[Double]]
+                       ): DenseVector[Double] = {
+
+    val centroid =
+      DenseVector.zeros[Double](
+        points(0).length
+      )
+
+    for (point <- points) {
+
+      for (i <- 0 until point.length) {
+
+        centroid(i) =
+          centroid(i) + point(i)
+      }
+    }
+
+    for (i <- 0 until centroid.length) {
+
+      centroid(i) =
+        centroid(i) / points.length
+    }
+
+    centroid
+  }
+
+  // -----------------------------------------
+  // K-Means Clustering
+  // -----------------------------------------
+  def kMeans(
+              data: Array[DenseVector[Double]],
+              k: Int,
+              maxIterations: Int
+            ): (Array[DenseVector[Double]], Array[Int]) = {
+
+    // Initial centroids
+    var centroids =
+      Array(
+        data(0).copy,
+        data(data.length / 2).copy
+      )
+
+    // Initial cluster assignment
+    var clusters =
+      Array.fill(data.length)(-1)
+
+    var iteration = 0
+    var changed = true
+
+    // -----------------------------------------
+    // Repeat until clusters stop changing
+    // -----------------------------------------
+    while (
+      iteration < maxIterations &&
+        changed
+    ) {
+
+      changed = false
+
+      // -----------------------------------------
+      // Assign each point to nearest centroid
+      // -----------------------------------------
+      for (i <- 0 until data.length) {
+
+        var minimumDistance =
+          Double.MaxValue
+
+        var nearestCluster =
+          0
+
+        for (c <- 0 until k) {
+
+          val distance =
+            euclideanDistance(
+              data(i),
+              centroids(c)
+            )
+
+          if (distance < minimumDistance) {
+
+            minimumDistance =
+              distance
+
+            nearestCluster =
+              c
+          }
+        }
+
+        if (
+          clusters(i) !=
+            nearestCluster
+        ) {
+
+          clusters(i) =
+            nearestCluster
+
+          changed = true
+        }
+      }
+
+      // -----------------------------------------
+      // Recalculate centroids
+      // -----------------------------------------
+      for (c <- 0 until k) {
+
+        val clusterPoints =
+          data.zip(clusters)
+            .filter {
+              case (_, cluster) =>
+                cluster == c
+            }
+            .map {
+              case (point, _) =>
+                point
+            }
+
+        if (clusterPoints.nonEmpty) {
+
+          centroids(c) =
+            calculateCentroid(
+              clusterPoints
+            )
+        }
+      }
+
+      iteration += 1
+
+      println(
+        "Iteration " +
+          iteration +
+          " completed"
+      )
+    }
+
+    (centroids, clusters)
+  }
+
+  // -----------------------------------------
+  // Main Program
+  // -----------------------------------------
+  def main(args: Array[String]): Unit = {
+
+    println("S112 Aditya Singh")
+    println("------------------------------------------")
+    println("K-Means Clustering using Breeze")
+    println("------------------------------------------")
+
+    // -----------------------------------------
+    // CSV File
+    // -----------------------------------------
+    val fileName =
+      "Mall_Customers.csv"
+
+    // -----------------------------------------
+    // Read CSV
+    // -----------------------------------------
+    val lines =
+      Source
+        .fromFile(fileName)
+        .getLines()
+        .drop(1)
+        .toArray
+
+    val data =
+      ArrayBuffer[
+        DenseVector[Double]
+      ]()
+
+    // -----------------------------------------
+    // Extract Data
+    // -----------------------------------------
+    for (line <- lines) {
+
+      val row =
+        line.split(",")
+
+      try {
+
+        // CSV columns:
+        // 0 = CustomerID
+        // 1 = Gender
+        // 2 = Age
+        // 3 = Annual Income
+        // 4 = Spending Score
+
+        val income =
+          row(3).trim.toDouble
+
+        val spendingScore =
+          row(4).trim.toDouble
+
+        // Breeze vector
+        val vector =
+          DenseVector(
+            income,
+            spendingScore
+          )
+
+        data += vector
+
+      } catch {
+
+        case _: Exception =>
+        // Skip invalid rows
+      }
+    }
+
+    // -----------------------------------------
+    // Dataset Information
+    // -----------------------------------------
+    println(
+      "\nTotal records loaded: " +
+        data.length
+    )
+
+    if (data.isEmpty) {
+
+      println(
+        "No data found. Check Mall_Customers.csv"
+      )
+
+      return
+    }
+
+    println(
+      "Features used: Annual Income, Spending Score"
+    )
+
+    // -----------------------------------------
+    // Number of Clusters
+    // -----------------------------------------
+    val k = 2
+
+    val maxIterations =
+      100
+
+    println(
+      "Number of clusters: " +
+        k
+    )
+
+    println("------------------------------------------")
+
+    // -----------------------------------------
+    // Perform K-Means
+    // -----------------------------------------
+    val result =
+      kMeans(
+        data.toArray,
+        k,
+        maxIterations
+      )
+
+    val centroids =
+      result._1
+
+    val clusters =
+      result._2
+
+    // -----------------------------------------
+    // Display Final Centroids
+    // -----------------------------------------
+    println(
+      "\nFinal Centroids"
+    )
+
+    println("------------------------------------------")
+
+    for (i <- 0 until k) {
+
+      println(
+        "Cluster " +
+          (i + 1) +
+          " : " +
+          centroids(i)
+      )
+    }
+
+    // -----------------------------------------
+    // Display Cluster Assignments
+    // -----------------------------------------
+    println(
+      "\nCluster Assignments"
+    )
+
+    println("------------------------------------------")
+
+    for (
+      i <- 0 until
+        math.min(20, data.length)
+    ) {
+
+      println(
+        "Customer " +
+          (i + 1) +
+          " : " +
+          data(i) +
+          " -> Cluster " +
+          (clusters(i) + 1)
+      )
+    }
+
+    // -----------------------------------------
+    // Count Customers in Each Cluster
+    // -----------------------------------------
+    println(
+      "\nCluster Size"
+    )
+
+    println("------------------------------------------")
+
+    for (i <- 0 until k) {
+
+      val count =
+        clusters.count(
+          _ == i
+        )
+
+      println(
+        "Cluster " +
+          (i + 1) +
+          " : " +
+          count +
+          " customers"
+      )
+    }
+
+    println("------------------------------------------")
+
+    println(
+      "K-Means clustering completed successfully."
+    )
+  }
+}
