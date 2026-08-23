@@ -1,0 +1,38 @@
+import os
+
+# Fix Windows Spark hostname problem
+os.environ["SPARK_LOCAL_IP"] = "127.0.0.1"
+os.environ["SPARK_LOCAL_HOSTNAME"] = "localhost"
+
+from pyspark.sql import SparkSession
+
+# Create Spark session
+spark = SparkSession.builder \
+    .appName("FilterRows") \
+    .master("local[*]") \
+    .config("spark.driver.host", "127.0.0.1") \
+    .config("spark.driver.bindAddress", "127.0.0.1") \
+    .getOrCreate()
+
+print("\n========== SPARK DATAFRAME ==========")
+
+# Read CSV file
+df = spark.read.csv(
+    "students.csv",
+    header=True,
+    inferSchema=True
+)
+
+print("\nOriginal Data:")
+df.show()
+
+# Filter rows
+filtered_df = df.filter(df["Marks"] >= 60)
+
+print("\nStudents with Marks >= 60:")
+filtered_df.show()
+
+print("=====================================")
+
+# Stop Spark
+spark.stop()
