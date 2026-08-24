@@ -1,0 +1,39 @@
+import os
+
+# Fix Spark networking issue on Windows
+os.environ["SPARK_LOCAL_IP"] = "127.0.0.1"
+os.environ["SPARK_LOCAL_HOSTNAME"] = "localhost"
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import avg
+
+# Create Spark Session
+spark = SparkSession.builder \
+    .appName("GroupByAverage") \
+    .master("local[*]") \
+    .config("spark.driver.host", "127.0.0.1") \
+    .config("spark.driver.bindAddress", "127.0.0.1") \
+    .getOrCreate()
+
+# Read CSV file
+df = spark.read.csv(
+    "students.csv",
+    header=True,
+    inferSchema=True
+)
+
+# Display original data
+print("\n===== ORIGINAL DATA =====")
+df.show()
+
+# Group by Department and calculate average Marks
+result = df.groupBy("Department").agg(
+    avg("Marks").alias("Average_Marks")
+)
+
+# Display result
+print("\n===== AVERAGE MARKS BY DEPARTMENT =====")
+result.show()
+
+# Stop Spark
+spark.stop()
