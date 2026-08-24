@@ -1,0 +1,71 @@
+import os
+
+# Fix Spark networking issue on Windows
+os.environ["SPARK_LOCAL_IP"] = "127.0.0.1"
+os.environ["SPARK_LOCAL_HOSTNAME"] = "localhost"
+
+from pyspark.sql import SparkSession
+
+# Create Spark Session
+spark = SparkSession.builder \
+    .appName("ShoppingMallProductJoin") \
+    .master("local[*]") \
+    .config("spark.driver.host", "127.0.0.1") \
+    .config("spark.driver.bindAddress", "127.0.0.1") \
+    .getOrCreate()
+
+# Read products CSV
+products_df = spark.read.csv(
+    "products.csv",
+    header=True,
+    inferSchema=True
+)
+
+# Read sales CSV
+sales_df = spark.read.csv(
+    "sales.csv",
+    header=True,
+    inferSchema=True
+)
+
+# Display products
+print("\n===== PRODUCT DATA =====")
+products_df.show()
+
+# Display sales
+print("\n===== SALES DATA =====")
+sales_df.show()
+
+# Join using common column Product_ID
+joined_df = products_df.join(
+    sales_df,
+    products_df.Product_ID == sales_df.Product_ID,
+    "inner"
+)
+
+# Select required columns
+result = joined_df.select(
+    products_df.Product_ID,
+    products_df.Product_Name,
+    products_df.Category,
+    products_df.Brand,
+    products_df.Price,
+    sales_df.Quantity_Sold,
+    sales_df.Store,
+    sales_df.Payment_Mode
+)
+
+# Display joined data
+print("\n===== JOINED SHOPPING MALL DATA =====")
+result.show()
+
+# Write output to CSV
+result.coalesce(1).write \
+    .mode("overwrite") \
+    .option("header", True) \
+    .csv("mall_joined_output")
+
+print("\nJoined data successfully saved to mall_joined_output")
+
+# Stop Spark
+spark.stop()
