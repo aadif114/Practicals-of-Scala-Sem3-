@@ -1,0 +1,293 @@
+import os
+
+# ============================================================
+# 1. Fix Spark networking issue on Windows
+# ============================================================
+
+os.environ["SPARK_LOCAL_IP"] = "127.0.0.1"
+os.environ["SPARK_LOCAL_HOSTNAME"] = "localhost"
+
+
+# ============================================================
+# 2. Import Libraries
+# ============================================================
+
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, lead, when
+from pyspark.sql.window import Window
+
+from pyspark.ml import Pipeline
+from pyspark.ml.feature import VectorAssembler, StandardScaler
+from pyspark.ml.classification import LogisticRegression
+from pyspark.ml.evaluation import MulticlassClassificationEvaluator
+
+
+# ============================================================
+# 3. Create Spark Session
+# ============================================================
+
+spark = SparkSession.builder \
+    .appName("StockClassification") \
+    .master("local[2]") \
+    .config("spark.driver.host", "127.0.0.1") \
+    .config("spark.driver.bindAddress", "127.0.0.1") \
+    .config("spark.local.ip", "127.0.0.1") \
+    .getOrCreate()
+
+print("\n========================================")
+print("       Spark Session Started")
+print("========================================")
+
+
+# ============================================================
+# 4. Read Stock Dataset
+# ============================================================
+
+data = spark.read.csv(
+    "nifty50_historical_data.csv",
+    header=True,
+    inferSchema=True
+)
+
+print("\nOriginal Stock Dataset:")
+data.show(10)
+
+
+# ============================================================
+# 5. Display Dataset Structure
+# ============================================================
+
+print("\nDataset Schema:")
+data.printSchema()
+
+
+# ============================================================
+# 6. Select Required Columns
+# ============================================================
+
+data = data.select(
+    "Date",
+    "Ticker",
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume"
+)
+
+print("\nSelected Columns:")
+data.show(10)
+
+
+# ============================================================
+# 7. Remove Null Values
+# ============================================================
+
+data = data.dropna()
+
+print("\nNumber of Records After Removing Null Values:")
+print(data.count())
+
+
+# ============================================================
+# 8. Create Window for Each Stock
+# ============================================================
+
+window = Window.partitionBy("Ticker").orderBy("Date")
+
+
+# ============================================================
+# 9. Get Next Day Closing Price
+# ============================================================
+
+data = data.withColumn(
+    "Next_Close",
+    lead("Close", 1).over(window)
+)
+
+
+# ============================================================
+# 10. Create Classification Label
+# ============================================================
+#
+# 1 = Stock price goes UP next day
+# 0 = Stock price goes DOWN next day
+#
+# ============================================================
+
+data = data.withColumn(
+    "label",
+    when(col("Next_Close") > col("Close"), 1.0)
+    .otherwise(0.0)
+)
+
+
+print("\nStock Data with Classification Label:")
+data.select(
+    "Ticker",
+    "Date",
+    "Close",
+    "Next_Close",
+    "label"
+).show(10)
+
+
+# ============================================================
+# 11. Remove Rows Where Next_Close is Missing
+# ============================================================
+
+data = data.dropna(
+    subset=["Next_Close"]
+)
+
+
+# ============================================================
+# 12. Define Input Features
+# ============================================================
+
+feature_columns = [
+    "Open",
+    "High",
+    "Low",
+    "Close",
+    "Volume"
+]
+
+
+# ============================================================
+# 13. VectorAssembler
+# ============================================================
+
+assembler = VectorAssembler(
+    inputCols=feature_columns,
+    outputCol="features"
+)
+
+
+# ============================================================
+# 14. StandardScaler
+# ============================================================
+
+scaler = StandardScaler(
+    inputCol="features",
+    outputCol="scaledFeatures"
+)
+
+
+# ============================================================
+# 15. Logistic Regression Model
+# ============================================================
+
+lr = LogisticRegression(
+    featuresCol="scaledFeatures",
+    labelCol="label",
+    maxIter=20
+)
+
+
+# ============================================================
+# 16. Create Spark MLlib Pipeline
+# ============================================================
+
+pipeline = Pipeline(
+    stages=[
+        assembler,
+        scaler,
+        lr
+    ]
+)
+
+
+# ============================================================
+# 17. Split Dataset into Training and Testing
+# ============================================================
+
+train_data, test_data = data.randomSplit(
+    [0.8, 0.2],
+    seed=42
+)
+
+print("\n========================================")
+print("Training Records:", train_data.count())
+print("Testing Records :", test_data.count())
+print("========================================")
+
+
+# ============================================================
+# 18. Train Logistic Regression Model
+# ============================================================
+
+print("\nTraining Logistic Regression Model...")
+
+model = pipeline.fit(train_data)
+
+print("Model Training Completed!")
+
+
+# ============================================================
+# 19. Make Predictions
+# ============================================================
+
+predictions = model.transform(test_data)
+
+
+# ============================================================
+# 20. Display Predictions
+# ============================================================
+
+print("\n========================================")
+print("             PREDICTIONS")
+print("========================================")
+
+predictions.select(
+    "Ticker",
+    "Date",
+    "Close",
+    "Next_Close",
+    "label",
+    "prediction"
+).show(20)
+
+
+# ============================================================
+# 21. Evaluate Model Accuracy
+# ============================================================
+
+evaluator = MulticlassClassificationEvaluator(
+    labelCol="label",
+    predictionCol="prediction",
+    metricName="accuracy"
+)
+
+accuracy = evaluator.evaluate(predictions)
+
+
+# ============================================================
+# 22. Display Final Results
+# ============================================================
+
+print("\n========================================")
+print("      STOCK CLASSIFICATION RESULTS")
+print("========================================")
+
+print("Algorithm : Logistic Regression")
+print("Features  : Open, High, Low, Close, Volume")
+print("Target    : Next-Day Price Direction")
+print("           1 = UP")
+print("           0 = DOWN")
+
+print("----------------------------------------")
+
+print("Accuracy  :", accuracy)
+
+print("========================================")
+
+
+# ============================================================
+# 23. Stop Spark
+# ============================================================
+
+spark.stop()
+
+print("\nSpark Session Stopped")
+print("Program Completed Successfully!")
