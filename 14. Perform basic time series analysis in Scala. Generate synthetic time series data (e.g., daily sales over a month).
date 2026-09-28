@@ -1,0 +1,136 @@
+import scala.util.Random
+
+object TimeSeriesAnalysis {
+
+  def main(args: Array[String]): Unit = {
+
+    // ============================================================
+    // 1. Generate Synthetic Daily Sales Data for 30 Days
+    // ============================================================
+
+    val random = new Random()
+
+    val salesData = (1 to 30).map { day =>
+      val sales = 5000 + random.nextInt(5000)
+      (day, sales)
+    }
+
+    println("==============================================")
+    println("     SYNTHETIC DAILY SALES - 30 DAYS")
+    println("==============================================")
+
+    println("Day\tSales")
+
+    salesData.foreach {
+      case (day, sales) =>
+        println(s"$day\t$sales")
+    }
+
+    // ============================================================
+    // 2. Calculate Total Sales
+    // ============================================================
+
+    val totalSales = salesData.map(_._2).sum
+
+    println("\nTotal Sales = " + totalSales)
+
+    // ============================================================
+    // 3. Calculate Average Daily Sales
+    // ============================================================
+
+    val averageSales = salesData.map(_._2).sum.toDouble / salesData.length
+
+    println(f"Average Daily Sales = $averageSales%.2f")
+
+    // ============================================================
+    // 4. Find Maximum Sales
+    // ============================================================
+
+    val maxSales = salesData.maxBy(_._2)
+
+    println(
+      s"Maximum Sales = ${maxSales._2} on Day ${maxSales._1}"
+    )
+
+    // ============================================================
+    // 5. Find Minimum Sales
+    // ============================================================
+
+    val minSales = salesData.minBy(_._2)
+
+    println(
+      s"Minimum Sales = ${minSales._2} on Day ${minSales._1}"
+    )
+
+    // ============================================================
+    // 6. Calculate Daily Sales Change
+    // ============================================================
+
+    println("\n==============================================")
+    println("           DAILY SALES CHANGE")
+    println("==============================================")
+
+    val dailyChange = salesData.sliding(2).map {
+      case Seq(previous, current) =>
+        val change = current._2 - previous._2
+        (current._1, change)
+    }.toSeq
+
+    println("Day\tChange")
+
+    dailyChange.foreach {
+      case (day, change) =>
+        println(s"$day\t$change")
+    }
+
+    // ============================================================
+    // 7. Calculate 7-Day Moving Average
+    // ============================================================
+
+    println("\n==============================================")
+    println("           7-DAY MOVING AVERAGE")
+    println("==============================================")
+
+    val movingAverage = salesData.sliding(7).map { window =>
+
+      val average =
+        window.map(_._2).sum.toDouble / window.length
+
+      (window.last._1, average)
+
+    }.toSeq
+
+    println("Day\t7-Day Moving Average")
+
+    movingAverage.foreach {
+      case (day, average) =>
+        println(f"$day\t$average%.2f")
+    }
+
+    // ============================================================
+    // 8. Basic Time Series Statistics
+    // ============================================================
+
+    val variance =
+      salesData
+        .map(_._2)
+        .map(sales => math.pow(sales - averageSales, 2))
+        .sum / salesData.length
+
+    val standardDeviation = math.sqrt(variance)
+
+    println("\n==============================================")
+    println("           TIME SERIES STATISTICS")
+    println("==============================================")
+
+    println(f"Mean Sales              : $averageSales%.2f")
+    println(f"Standard Deviation      : $standardDeviation%.2f")
+    println(f"Minimum Sales           : ${minSales._2}")
+    println(f"Maximum Sales           : ${maxSales._2}")
+    println(f"Total Sales             : $totalSales")
+
+    println("\n==============================================")
+    println("           ANALYSIS COMPLETED")
+    println("==============================================")
+  }
+}
