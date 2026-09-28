@@ -1,0 +1,107 @@
+import scala.io.Source
+
+object S112PolynomialStudentPerformance {
+
+  def main(args: Array[String]): Unit = {
+
+    // ----------------------------------------------------
+    // 1. CSV file location
+    // ----------------------------------------------------
+    val filePath = "student-mat.csv"
+
+    // ----------------------------------------------------
+    // 2. Read CSV file
+    // ----------------------------------------------------
+    val source = Source.fromFile(filePath)
+
+    val lines = source.getLines().toList
+
+    source.close()
+
+    // ----------------------------------------------------
+    // 3. Read header
+    // ----------------------------------------------------
+    val header = lines.head
+      .split(";")
+      .map(_.trim.replace("\"", ""))
+
+    println("==============================================")
+    println("       STUDENT PERFORMANCE DATASET")
+    println("==============================================")
+
+    println("\nDataset Columns:")
+    println(header.mkString(", "))
+
+    // ----------------------------------------------------
+    // 4. Find G1 column
+    // ----------------------------------------------------
+    val g1Index = header.indexOf("G1")
+
+    println("\nG1 Column Index: " + g1Index)
+
+    if (g1Index == -1) {
+      println("ERROR: G1 column was not found!")
+      return
+    }
+
+    // ----------------------------------------------------
+    // 5. Generate Polynomial Features
+    // ----------------------------------------------------
+
+    println("\n==============================================")
+    println("       POLYNOMIAL FEATURES")
+    println("==============================================")
+
+    println("G1\tG1^2\tG1^3")
+
+    println("----------------------------------------------")
+
+    // Process first 10 students
+    lines.tail.take(10).foreach { line =>
+
+      val columns = line
+        .split(";")
+        .map(_.trim.replace("\"", ""))
+
+      // Remove quotation marks before conversion
+      val g1 = columns(g1Index).toDouble
+
+      val g1_1 = math.pow(g1, 1)
+      val g1_2 = math.pow(g1, 2)
+      val g1_3 = math.pow(g1, 3)
+
+      println(
+        f"$g1_1%.0f\t$g1_2%.0f\t$g1_3%.0f"
+      )
+    }
+
+    // ----------------------------------------------------
+    // 6. Generate Polynomial Feature Vectors
+    // ----------------------------------------------------
+
+    println("\n==============================================")
+    println("       POLYNOMIAL FEATURE VECTORS")
+    println("==============================================")
+
+    lines.tail.take(5).foreach { line =>
+
+      val columns = line
+        .split(";")
+        .map(_.trim.replace("\"", ""))
+
+      val g1 = columns(g1Index).toDouble
+
+      val features = (1 to 3).map { degree =>
+        math.pow(g1, degree).toInt
+      }
+
+      println(
+        s"G1 = ${g1.toInt} -> [${features.mkString(", ")}]"
+      )
+    }
+
+    println("\n==============================================")
+    println("Polynomial feature generation completed.")
+    println("==============================================")
+  }
+}
